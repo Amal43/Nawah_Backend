@@ -9,29 +9,29 @@ const productSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
+    // required: true,
     minlength: 10,
     maxlength: 500
   },
   price: {
     type: Number,
-    required: true,
+    // required: true,
     min: 0
   },
   imageUrl: {
     type: String,
-    required: true,
+    // required: true,
     default: "http://localhost:5000/default.png"
   },
   category: {
     type: String,
     enum: ['dates','fertilizer', 'palm'],
-    required: true
+    // required: true
   },
  
   quantity:{
     type:Number,
-    required: true
+    // required: true
   },
   
   status: {
@@ -48,8 +48,5 @@ const productSchema = new mongoose.Schema({
 })
 
 const Product = mongoose.model('products', productSchema);
-
-
-
 
 module.exports = Product;
