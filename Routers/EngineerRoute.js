@@ -8,7 +8,7 @@ const bcrypt= require('bcrypt')
 const cookieParser = require('cookie-parser');
 const Jwt = require('jsonwebtoken');
 const { verify } = require('crypto');
-const key= "keystring";
+const key = "keystring";
 const bodyParser = require('body-parser');
 route.use(bodyParser.json());
 route.use(cookieParser());
@@ -22,8 +22,18 @@ let filestorage = multer.diskStorage({
         cb(null, file.originalname)
     }
 })
-let upload = multer({ storage:filestorage })
 
+const multerFilter = function (req, file, cb) {
+    if (file.mimetype.split("/")[0] == "image") {
+        cb(null, true);
+    } else {
+        cb(new Error("Not image"), false);
+    }
+};
+let upload = multer({
+    storage:filestorage ,   
+    fileFilter:multerFilter
+    })
 // ======================== engineer register================================//
 //======================================================================================//
 
@@ -33,13 +43,14 @@ route.post('/register',upload.single('img'),bodyParser.urlencoded({extended:fals
     req.body.password = hashedPassword; 
 
     let engineerRegister= await Engineer.create({
-    fname:req.body.fname,
-    lname:req.body.lname,
-    email:req.body.email,
-    password:req.body.password,
-    address:req.body.address,
-    img:req.body.img,
-    license:req.body.license,
+        fname:req.body.fname,
+        lname:req.body.lname,
+        email:req.body.email,
+        password:req.body.password,
+        address:req.body.address,
+        img:req.file.filename,
+        phone: req.body.phone,
+        license:req.body.license,
     });
 
     if(engineerRegister)
@@ -66,21 +77,20 @@ route.post('/register',upload.single('img'),bodyParser.urlencoded({extended:fals
 // ======================================================================================//
 route.post('/login',async function(req,res)
 {  
-    const enginfo=req.body;
-    const engineer= await Engineer.findOne({email:enginfo.email});
-    
+    let enginfo=req.body;
+    let engineer= await Engineer.findOne({email:enginfo.email});
+    console.log(enginfo);
     if(engineer)
     { 
         const isValidPassword = bcrypt.compare(
-            enginfo.password,
-            engineer.password);
+            enginfo.password, engineer.password);
         if(isValidPassword){
-            let token=Jwt.sign(engineer.email,key)
-            // console.log(token)
+            let token=Jwt.sign(engineer.email, "key")
             res.cookie('token',token, {maxAge: 360000});
-            res.json({
+            res.status(200).json({
                 message: "Login Successfully",
-                status: 200,
+                token:token,
+                data: engineer,
                 success: true,
             });
         }  
@@ -90,7 +100,7 @@ route.post('/login',async function(req,res)
         res.json({
             message: "Error:invalid credentials , on account found",
             status: 401,
-            data: req.body,
+            // data: req.body,
             success: false,
         });
     }    
@@ -109,7 +119,6 @@ route.get('/getalleng',async function(req,res)
         success: true,
     });
 })
-
 // ==========================delete================================//
 //======================================================================================//
 
@@ -135,12 +144,10 @@ route.delete('/deleng/:id',async function(req,res){
         });
     }  
 })
-
-
 // ==========================update================================//
 //======================================================================================//
 
-route.put('/updateeng/:id',async function(req,res)
+route.patch('/updateeng/:id',async function(req,res)
 {
     let updateng= await Engineer.findByIdAndUpdate(req.params.id,req.body);
     if(updateng)
@@ -162,7 +169,99 @@ route.put('/updateeng/:id',async function(req,res)
         });
     }  
 })
+// ==========================dashboard get engineer by id==================================================//
+//======================================================================================//
+route.get("/:id", async function (req, res) {
+    let data = await Engineer.findOne({ _id: req.params.id })
+    if (data) {
+        res.json({
+            message: "get Engineer",
+            status: 200,
+            data: data,
+            success: true,
+        });
+    }
+    else {
+        res.json({
+            message: "not exists",
+            status: 400,
+            data: req.params.id,
+            success: false,
+        });
+    }
+})
+// =======================get one engineer ==========================================//
+//======================================================================================//
+route.get('/getoneeng/:token',  async function (req, res) {
+    try {
+        // Get the token from the request parameters
+        const token = req.params.token;
 
+        // Verify the token
+        const decodedToken = Jwt.verify(token, "key");
 
+        // Find the engineer by email
+        const engineer = await Engineer.findOne({ email: decodedToken });
 
+            // Check if the engineer was found
+            if (engineer) {
+            // Send a 200 OK response with the engineer data
+                res.json({
+                    message: "Successfully Get engineer",
+                    status: 200,
+                    data: engineer,
+                    success: true
+                });
+            } else {
+            // Send a 404 Not Found response
+                res.status(404).json({
+                    message: "Cannot Find engineer",
+                    status: 404,
+                    success: false
+                });
+            }
+        } catch (err) {
+            // Log the error
+            console.error(err);
+            // Send a 500 Internal Server Error response
+                res.status(500).json({
+                    message: "Internal Server Error",
+                    status: 500,
+                    success: false
+                });
+        }
+});
+// ======================= get farmer =================================//
+//========================================================================//
+route.get("/getfarmer/:id",async function(req,res){
+    let data = await Engineer.findOne({_id:req.params.id}).populate('farmers')
+    if(data){
+        res.json({
+            message:"get Engineer",
+            status:200,
+            data: data,
+            success: true,
+        })
+    }
+    else{
+        res.json({
+            message:"not exists",
+            status:400,
+            data: req.params.id,
+            success: false,
+        })
+    }
+})
+//================================================add farmer in enginer=================================================//
+//===========================================================================================//
+route.put('/add/:id', async function (req, res) {
+    let updateFarmer = await Engineer.findByIdAndUpdate(req.params.id,{farmers:req.body.checkArray})
+        console.log(updateFarmer)
+    res.json({
+        message: "successfully added",
+        status: 200,
+        data: updateFarmer,
+        success: true,
+    });
+})
 module.exports=route;

@@ -4,68 +4,94 @@ const { Schema } = mongoose;
 const farmerSchema = new Schema({
   fname: {
     type: String,
-    required: true
+    // required: true
   },
   lname: {
     type: String,
-    required: true
+    // required: true
   },
   email: {
     type: String,
-    required: true,
+    // required: true,
     unique: true
   },
   password: {
     type: String,
-    required: true,
-    validate: {
-      validator: function(value) {
-        return value && value.length >= 6;
-      },
-      message: 'Password must be at least 6 characters long'
-    }
   },
   phone: {
     type: Number,
-    required: true,
+    // required: true,
   },
   address: {
       type: String,
-      required: true
+      // required: true
   },
   farmaddress: {
     type: String,
-    required: true
+    // required: true
   },
   farmarea:{
     type: Number,
-    required: true,
+    // required: true,
   },
   cropamount:{
     type: Number,
-    required: true,
+    // required: true,
   },
   croptype:{
     type: String,
-    required: true,
+    // required: true,
   },
   farmingExperience: {
     type: Number,
   },
   img:{
     type:String,
-    required: true,
+    // required: true,
     default: "http://localhost:5000/default.png",
   },
-
-  addProduct:{
-    product: [{
-      type: mongoose.Schema.Types.ObjectId,ref:'products',
-      required: true
-    }],
-  }
+  notes:{
+    type:Array,
+    default:[]
+  },
+  role:
+  {
+      type:String,
+      default:"farmer",
+      enum:{
+          values:["admin","user",'farmer','engineer'],
+          message:'{VALUE} is not supported',
+      }
+  },
+  order:[{
+    items: {
+      type:Array,
+    },
+      totalPrice: {
+      type: Number,
+      // required: true
+    },
+      date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
 });
 
 const Farmer = mongoose.model('farmers', farmerSchema);
+
+// Farmer.create({
+//   fname:"karemee",
+//   lname:"Aliii",
+//   email:"aaali@gmail.com",
+//   password:"ali123",
+//   phone:2122,
+//   address:"aswan",
+//   farmaddress:"aswan",
+//   croptype:"Dates",
+//   farmarea:555,
+//   cropamount:555,
+//   farmingExperience:555,
+// })
 
 module.exports = Farmer;
